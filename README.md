@@ -1,27 +1,12 @@
-===
+## React + TypeScript + Vite (Hỏi Dân IT)
 
-echo "# learn-react-tsc" >> README.md
-git init
-git add README.md
-git commit -m "first commit"
-git branch -M main
-git remote add origin https://github.com/yennd10/learn-react-tsc.git
-git remote set-url origin git@github.com:yennd10/learn-react-tsc.git
-git push -u origin main
+Template này được sử dụng cho series React/Next.JS của tác giả Hỏi Dân IT (Eric)
 
-===
+Các bước cần làm:
+1. Clone dự án
+2. Cài đặt các thư viện cần thiết: npm i
+3. Chạy dự án với câu lệnh: npm run dev
 
-Các bước cài đặt: (chế độ development)
-1. clone code
-2. cài đặt thư viện: npm i
-3. Update file .env.development (nếu cần thiết)
-4. Chạy dự án: npm run dev
+&nbsp;
+Truy cập:  http://localhost:5173/
 
-===
-
-Cách chạy tại chế độ production:
-1. clone code
-2. cài đặt thư viện: npm i
-3. Update file .env.production (nếu cần thiết)
-4. Build dự án: npm run build
-5. Chạy dự án: npm run preview
