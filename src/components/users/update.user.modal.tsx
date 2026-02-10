@@ -12,7 +12,7 @@ interface IProps {
 }
 
 const UpdateUserModal = (props: IProps) => {
-    const { getData, setIsUpdateModalOpen, access_token, isUpdateModalOpen,dataUpdate, setDataUpdate } = props;
+    const { access_token, getData, dataUpdate, setDataUpdate, isUpdateModalOpen, setIsUpdateModalOpen } = props;
 
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
@@ -22,8 +22,8 @@ const UpdateUserModal = (props: IProps) => {
     const [address, setAddress] = useState("");
     const [role, setRole] = useState("");
 
-    useEffect(() => {
-        //update value for data state
+    useEffect(() => {    
+        //khi click edit sẽ nhận dataUpdate từ parent sau đó update value for data field state để  re-render value của input form.
         if (dataUpdate) {
             setName(dataUpdate.name);
             setEmail(dataUpdate.email);
@@ -33,40 +33,43 @@ const UpdateUserModal = (props: IProps) => {
             setAddress(dataUpdate.address);
             setRole(dataUpdate.role);
         }
-    }, [dataUpdate])
+    }, [dataUpdate]); //useEffect chạy lần đầu thì chưa có dataUpdate, nó sẽ mount ra screen là value '', cần thành phần deps theo dõi sự thay đổi của dataUpdate
 
     const handleOk = async () => {
-        // setIsUpdateModalOpen(false);
-        const data = {name, email, password, age, gender, role, address}
+        if(dataUpdate) {
+            const data = {
+                _id: dataUpdate._id, // _Id cần update
+                name, email, password, age, gender, role, address}
 
-        const fetchUsers = await fetch(
-            "http://localhost:8000/api/v1/users", 
-            {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${access_token}`,
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({...data}) //get data then insert to database by api
+            const fetchUsers = await fetch(
+                "http://localhost:8000/api/v1/users", 
+                {
+                    method: "PATCH",
+                    headers: {
+                        "Authorization": `Bearer ${access_token}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(data) //get data then insert to database by api
+                }
+            );        
+
+            const dataUsers = await fetchUsers.json();
+
+            if(dataUsers.data) {
+                //update success
+                await getData();
+                notification.success({
+                    message: "Sửa user thành công.",
+                })
+
+                handleCloseUpdateModal();
+
+            } else {
+                notification.error({
+                    message: "has error",
+                    description: JSON.stringify(dataUsers.message)
+                });
             }
-        );
-
-        const dataUsers = await fetchUsers.json();
-
-        if(dataUsers.data) {
-            //insert success
-            await getData();
-            notification.success({
-                message: "Tạo mới user thành công.",
-            })
-
-            handleCloseUpdateModal();
-
-        } else {
-            notification.error({
-                message: "has error",
-                description: JSON.stringify(dataUsers.message)
-            });
         }
     };
 
@@ -111,6 +114,7 @@ const UpdateUserModal = (props: IProps) => {
                 <div>
                     <label>Password:</label>
                     <Input
+                        disabled={true}
                         value={password}
                         onChange={(event) => setPassword(event.target.value)}
                     />

@@ -92,7 +92,7 @@ const CreateUserModal = (props: IProps) => {
                 </div>
                 <div>
                     <label>Password:</label>
-                    <Input
+                    <Input                        
                         value={password}
                         onChange={(event) => setPassword(event.target.value)}
                     />

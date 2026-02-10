@@ -1,4 +1,4 @@
-import React, { StrictMode, useState } from 'react'
+import React, { StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import {
   createBrowserRouter,
@@ -41,6 +41,33 @@ const Header = () => {
 }
 
 const GeneralLayout = () => {
+  const getData = async () => {      
+    const fetchUsers = await fetch(
+        "http://localhost:8000/api/v1/auth/login", 
+        {          
+          method: "POST",  
+          headers: {                  
+              "Content-Type": "application/json",
+          },
+          
+          body: JSON.stringify({
+            username: "hoidanit@gmail.com",
+            password: "123456"
+          })
+        }
+    );        
+
+    const dataUsers = await fetchUsers.json();
+    
+    if (dataUsers.data) {
+        localStorage.setItem("access_token", dataUsers.data.access_token);
+    }      
+  }
+
+  useEffect(() => { 
+    getData() ;
+  },[]);
+
   return(
     <>
       <Header/>

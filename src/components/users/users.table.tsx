@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 // import '../../styles/users.css';
-import { Table, Button, notification } from 'antd';
+import { Table, Button, notification, Popconfirm, message } from 'antd';
+import type { PopconfirmProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined } from '@ant-design/icons';
 import CreateUserModal from './create.user.modal';
@@ -24,34 +25,61 @@ const UsersTable = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
 
-    const [dataUpdate, setDataUpdate] = useState<null | IUsers>(null);
+    const [dataUpdate, setDataUpdate] = useState<null | IUsers>(null); // dataUpdate có type là null or IUsers giá trị khởi tạo là null
+    const [messageApi, holder] = message.useMessage();
 
-    const access_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0b2tlbiBsb2dpbiIsImlzcyI6ImZyb20gc2VydmVyIiwiX2lkIjoiNjk1MGFlZTQ1NmE3MzFkNjQwMDI2MmVlIiwiZW1haWwiOiJob2lkYW5pdEBnbWFpbC5jb20iLCJhZGRyZXNzIjoiVmlldE5hbSIsImlzVmVyaWZ5Ijp0cnVlLCJuYW1lIjoiSSdtIEjhu49pIETDom4gSVQiLCJ0eXBlIjoiU1lTVEVNIiwicm9sZSI6IkFETUlOIiwiZ2VuZGVyIjoiTUFMRSIsImFnZSI6OTYsImlhdCI6MTc3MDY1MDQ5NCwiZXhwIjoxODU3MDUwNDk0fQ.62HU_sK4g0ZpTmiY-AbWRfQSQlcOnWEn1kxTMBOrVHc";
-
-    const getData = async () => {       
-
-        // api url, method, body, headers
-        // const res = await fetch(            
-        //     "http://localhost:8000/api/v1/auth/login",
-        //     {
-        //         method: "POST",
-        //         headers: {
-        //             "Content-Type": "application/json"
-        //         },
-        //         body: JSON.stringify({
-        //             username: "hoidanit@gmail.com",
-        //             password: "123456"
-        //         })
-        //     }
-        // );
-
-        //res.json()
-        // const data = await res.json();
-
-        // console.log("data:", data);       
-      
+   
+    const confirm = async (user: IUsers) => {
         const fetchUsers = await fetch(
-            "http://localhost:8000/api/v1/users/all", 
+            `http://localhost:8000/api/v1/users/${user._id}`, 
+            {
+                method: "DELETE",
+                headers: {
+                    "Authorization": `Bearer ${access_token}`,
+                    "Content-Type": "application/json",
+                }                
+            }
+        );        
+
+        const dataUsers = await fetchUsers.json();
+
+        if(dataUsers.data) {
+            //delete success
+            await getData();
+            notification.success({
+                message: "Xóa user thành công.",
+            })
+
+        } else {
+            notification.error({
+                message: "has error",
+                description: JSON.stringify(dataUsers.message)
+            });
+        }
+    };
+
+    const cancel: PopconfirmProps['onCancel'] = (e) => {
+        console.log(e);
+        messageApi.error('Click on No');
+    };
+
+    const access_token = localStorage.getItem("access_token") as string;
+
+    const [meta, setMeta] = useState({
+        current: 1,
+        pageSize: 2,
+        pages: 0,
+        total: 0
+    });
+
+
+    const handleOnchange = (page: number, pageSize: number) => {
+        console.log(page+'-'+pageSize);
+    }
+
+    const getData = async () => {      
+        const fetchUsers = await fetch(
+            `http://localhost:8000/api/v1/users?current=${meta.current}&pageSize=${meta.pageSize}`, 
             {
                 headers: {
                     "Authorization": `Bearer ${access_token}`,
@@ -70,6 +98,12 @@ const UsersTable = () => {
         // add user data to listUsers
         setListUsers(dataUsers.data.result);
         // console.log("dataUsers:", dataUsers);
+        setMeta({
+            current: dataUsers.data.meta.current,
+            pageSize: dataUsers.data.meta.pageSize,
+            pages: dataUsers.data.meta.pages,
+            total: dataUsers.data.meta.total
+        })
     }
 
     useEffect(()=>{
@@ -99,10 +133,20 @@ const UsersTable = () => {
 
                 return (<div>
                     <button onClick={() => {
-                        setDataUpdate(record);
+                        setDataUpdate(record); // truyền dataUpdate là record qua update modal để  show value edit
                         setIsUpdateModalOpen(true)
                     }}>Edit</button>
-
+                    {holder}
+                    <Popconfirm
+                        title="Delete the task"
+                        description={`Are you sure to delete name=${record.name}?`}
+                        onConfirm={() => confirm(record)} // truyền user record đến confirm function để  xóa theo _id
+                        // onCancel={cancel}
+                        okText="Yes"
+                        cancelText="No"
+                    >
+                        <Button danger style={{marginLeft: 20}}>Delete</Button>
+                    </Popconfirm>
                 </div>)
             }
         }
@@ -129,10 +173,28 @@ const UsersTable = () => {
                 columns={columns}
                 dataSource={listUsers}
                 rowKey={"_id"}
+                pagination={{
+                    current: meta.current,
+                    pageSize: meta.pageSize,
+                    total: meta.total,
+                    showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+                    onChange: handleOnchange
+                }}
             />
 
             <CreateUserModal getData={getData} setIsModalOpen={setIsModalOpen} isModalOpen={isModalOpen} access_token={access_token}/>
-            <UpdateUserModal  getData={getData} access_token={access_token} dataUpdate={dataUpdate} setDataUpdate={setDataUpdate} setIsModalOpen={setIsModalOpen}  isUpdateModalOpen={isUpdateModalOpen} setIsUpdateModalOpen= {setIsUpdateModalOpen} />
+            
+            {/* truyền các props, method xuống cho child component sử dụng */}
+            <UpdateUserModal  
+                access_token={access_token} 
+                getData={getData}
+                isUpdateModalOpen={isUpdateModalOpen} 
+                setIsUpdateModalOpen= {setIsUpdateModalOpen}                
+                dataUpdate={dataUpdate} 
+                setDataUpdate={setDataUpdate}         
+            />
+
+           
         </div>
     )
 }
